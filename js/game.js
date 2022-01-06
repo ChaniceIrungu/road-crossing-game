@@ -36,9 +36,15 @@ gameScene.create = function () {
   this.treasure.setScale(0.5);
 
   //enemy
+  this.dragons = this.add.group();
+
   this.dragon = this.add.sprite(150, 180, "dragon");
   this.dragon.setScale(0.6);
   this.dragon.flipX = true;
+
+  this.dragons.add(this.dragon);
+
+  console.log(this.dragons);
 
   //set enemy speed
   let direction = Math.random() < 0.5 ? 1 : -1;
