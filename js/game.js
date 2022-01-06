@@ -11,6 +11,9 @@ gameScene.init = function () {
   // boundaries
   this.dragonMinY = 40;
   this.dragonMaxY = 298;
+
+  //we are definitely not terminating
+  this.isTerminating = false;
 };
 
 //load assets
@@ -68,6 +71,10 @@ gameScene.preload = function () {
   //set enemy speed
 }),
   (gameScene.update = function () {
+    //don't execute if we are terminating
+    if (this.isTerminating) {
+      return;
+    }
     if (this.input.activePointer.isDown) {
       this.player.x += this.playerSpeed;
     }
@@ -82,8 +89,7 @@ gameScene.preload = function () {
       console.log("reached goal!");
 
       // restart the Scene
-      this.scene.restart();
-      return;
+      return this.gameOver();
     }
 
     //get the enemies
@@ -115,10 +121,34 @@ gameScene.preload = function () {
         )
       ) {
         console.log("Game Over");
-        this.scene.restart();
+        return this.gameOver();
       }
     }
   });
+
+gameScene.gameOver = function () {
+  //initiated game over sequence
+  this.isTerminating = true;
+  //shake camera
+  this.cameras.main.shake(500);
+
+  //listen for camera event completion
+  this.cameras.main.on(
+    "camerashakecomplete",
+    function (camera, effect) {
+      //fade out
+      this.cameras.main.fade(500);
+    },
+    this
+  );
+  this.cameras.main.on(
+    "camerafadeoutcomplete",
+    function (camera, effect) {
+      this.scene.restart();
+    },
+    this
+  );
+};
 
 //  configuration of the game
 let config = {
