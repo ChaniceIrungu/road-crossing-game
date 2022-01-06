@@ -2,7 +2,7 @@
 let gameScene = new Phaser.Scene("Game");
 
 gameScene.init = function () {
-  this.playerSpeed = 2;
+  this.playerSpeed = 4.5;
 
   //enemy speed
   this.dragonMinSpeed = 2;
@@ -10,7 +10,7 @@ gameScene.init = function () {
 
   // boundaries
   this.dragonMinY = 40;
-  this.dragonMaxY = 280;
+  this.dragonMaxY = 298;
 };
 
 //load assets
@@ -22,7 +22,7 @@ gameScene.preload = function () {
   this.load.image("treasure", "assets/treasure.png");
 };
 
-gameScene.create = function () {
+(gameScene.create = function () {
   //create bg sprite
   let bg = this.add.sprite(0, 0, "background");
   bg.setPosition(640 / 2, 360 / 2);
@@ -35,54 +35,90 @@ gameScene.create = function () {
   this.treasure = this.add.sprite(580, 180, "treasure");
   this.treasure.setScale(0.5);
 
-  //enemy
-  this.dragons = this.add.group();
+  //enemy Group
+  this.dragons = this.add.group({
+    key: "dragon",
+    repeat: 3,
+    setXY: {
+      x: 120,
+      y: 100,
+      stepX: 120,
+      stepY: 40,
+    },
+  });
 
-  this.dragon = this.add.sprite(150, 180, "dragon");
-  this.dragon.setScale(0.6);
-  this.dragon.flipX = true;
+  //setting scale to all group elements
+  Phaser.Actions.ScaleXY(this.dragons.getChildren(), -0.4, -0.4);
 
-  this.dragons.add(this.dragon);
+  //set flipX and speed
+  Phaser.Actions.Call(
+    this.dragons.getChildren(),
+    function (dragon) {
+      dragon.flipX = true;
+      let direction = Math.random() < 0.5 ? 1 : -1;
+      let speed =
+        this.dragonMinSpeed +
+        Math.random() * (this.dragonMaxSpeed - this.dragonMinSpeed);
 
-  console.log(this.dragons);
+      dragon.speed = direction * speed;
+    },
+    this
+  );
 
   //set enemy speed
-  let direction = Math.random() < 0.5 ? 1 : -1;
-  let speed =
-    this.dragonMinSpeed +
-    Math.random() * (this.dragonMaxSpeed - this.dragonMinSpeed);
+}),
+  (gameScene.update = function () {
+    if (this.input.activePointer.isDown) {
+      this.player.x += this.playerSpeed;
+    }
 
-  this.dragon.speed = direction * speed;
-};
+    // treasure overlap check
+    let playerRectangle = this.player.getBounds();
+    let treasureRect = this.treasure.getBounds();
 
-gameScene.update = function () {
-  if (this.input.activePointer.isDown) {
-    this.player.x += this.playerSpeed;
-  }
+    if (
+      Phaser.Geom.Intersects.RectangleToRectangle(playerRectangle, treasureRect)
+    ) {
+      console.log("reached goal!");
 
-  let playerRectangle = this.player.getBounds();
-  let treasureRectangle = this.treasure.getBounds();
+      // restart the Scene
+      this.scene.restart();
+      return;
+    }
 
-  if (
-    Phaser.Geom.Intersects.RectangleToRectangle(
-      playerRectangle,
-      treasureRectangle
-    )
-  ) {
-    this.scene.manager.bootScene(this);
-  }
+    //get the enemies
+    let dragons = this.dragons.getChildren();
+    let numOfDragons = dragons.length;
 
-  this.dragon.y += this.dragon.speed;
+    for (let i = 0; i < numOfDragons; i++) {
+      //enemy movement
+      dragons[i].y += dragons[i].speed;
 
-  //check we havent passed min or max Y
-  let conditionUp = this.dragon.speed < 0 && this.dragon.y <= this.dragonMinY;
-  let conditionDown = this.dragon.speed > 0 && this.dragon.y >= this.dragonMaxY;
+      //check we havent passed min or max Y
+      let conditionUp = dragons[i].speed < 0 && dragons[i].y <= this.dragonMinY;
+      let conditionDown =
+        dragons[i].speed > 0 && dragons[i].y >= this.dragonMaxY;
 
-  //if the upper or lower limit is passed reverse
-  if (conditionUp || conditionDown) {
-    this.dragon.speed *= -1;
-  }
-};
+      //if the upper or lower limit is passed reverse
+      if (conditionUp || conditionDown) {
+        dragons[i].speed *= -1;
+      }
+
+      //check enemy overlap and
+
+      let dragonRectangle = dragons[i].getBounds();
+
+      if (
+        Phaser.Geom.Intersects.RectangleToRectangle(
+          playerRectangle,
+          dragonRectangle
+        )
+      ) {
+        console.log("Game Over");
+        this.scene.restart();
+      }
+    }
+  });
 
 //  configuration of the game
 let config = {
