@@ -82,7 +82,7 @@ gameScene.update = function () {
   this.dragon3.angle += 1;
 };
 
-// set configuration of the game
+//  configuration of the game
 let config = {
   type: Phaser.AUTO,
   width: 640,
